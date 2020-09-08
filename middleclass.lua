@@ -1,5 +1,5 @@
 local middleclass = {
-  _VERSION     = 'middleclass v4.1.1',
+  _VERSION     = 'middleclass v4.1.2',
   _DESCRIPTION = 'Object Orientation for Lua',
   _URL         = 'https://github.com/kikito/middleclass',
   _LICENSE     = [[
@@ -128,9 +128,30 @@ local DefaultMixin = {
   end,
 
   static = {
-    allocate = function(self)
-      assert(type(self) == 'table', "Make sure that you are using 'Class:allocate' instead of 'Class.allocate'")
-      return setmetatable({ class = self }, self.__instanceDict)
+     __updateAllocatedClass = function(self, allocated)
+        allocated.class = self
+
+        return setmetatable(allocated, self.__instanceDict)
+     end,
+
+     __allocate = function(self)
+        assert(type(self) == 'table', "Make sure that you are using 'Class:allocate' instead of 'Class.allocate'")
+
+        return self:__updateAllocatedClass({})
+    end,
+
+    allocate = function(self, ...)
+       return self:__allocate()
+    end,
+
+    newFromAllocated = function(self, allocated, ...)
+       assert(type(self) == 'table', "Make sure that you are using 'Class:new' instead of 'Class.new'")
+
+       -- Update the class in allocate was called with e.g. the parent
+       self:__updateAllocatedClass(allocated)
+       allocated:initialize(...)
+
+       return allocated
     end,
 
     new = function(self, ...)
